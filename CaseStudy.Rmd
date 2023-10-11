@@ -1,0 +1,152 @@
+---
+title: "Bellabeat Case Study Analysis Using R"
+author: "Derrick"
+date: "2023-09-29"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Bellabeat CaseStudy
+
+### Bellabeat is a high-tech manufacturer of health-focused products for women.
+
+### Business Task:
+
+##### To focus on a Bellabeat product and analyze smart device usage data in order to gain insight into how people are already using their smart devices. Then, using this information, make high-level recommendations for how these trends can inform Bellabeat marketing strategy.
+
+##### To analyze smart device usage data in order to gain insight into how consumers use non-Bellabeat smart devices. Then, select one Bellabeat product to apply these insights to in your presentation
+
+### Data Sources:
+
+##### Kaggle: Kaggle is the world's largest data science community with powerful tools and resources to help one achieve their data science goals. The Dataset used is the FitBit Fitness Tracker Data.
+
+### Stakeholders:
+
+##### (i.) Urška Sršen
+
+##### (ii.) Sando Mur
+
+##### (iii.) Bellabeat marketing analytics team
+
+```{r Setting up: Loading packages}
+install.packages("tidyverse")
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+
+## Getting out the datasets
+
+```{r importing the dataset}
+daily_Act <- read_csv("dailyActivity_merged.csv")
+hourly_Cal <- read_csv("hourlyCalories_merged.csv")
+Intensities_22 <- read_csv("dailyIntensities_merged.csv")
+sleep <- read_csv("sleepDay_merged.csv")
+weight <- read_csv("weightLogInfo_merged.csv")
+```
+
+## Aligning the formatting
+
+```{r}
+# Aligning the formatting
+hourly_Cal$ActivityHour=as.POSIXct(hourly_Cal$ActivityHour, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+hourly_Cal$time <- format(hourly_Cal$ActivityHour, format = "%H:%M:%S")
+hourly_Cal$date <- format(hourly_Cal$ActivityHour, format = "%m/%d/%y")
+# activity
+daily_Act$ActivityDate=as.POSIXct(daily_Act$ActivityDate, format="%m/%d/%Y", tz=Sys.timezone())
+daily_Act$date <- format(daily_Act$ActivityDate, format = "%m/%d/%y")
+# sleep
+sleep$SleepDay=as.POSIXct(sleep$SleepDay, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+sleep$date <- format(sleep$SleepDay, format = "%m/%d/%y")
+```
+
+## Seeing the Unique Ids
+
+```{r, Seeing the unique Ids}
+n_distinct(hourly_Cal$Id)
+n_distinct(daily_Act$Id)
+n_distinct(Intensities_22$Id)
+n_distinct(sleep$Id)
+n_distinct(weight$Id)
+```
+
+#Summarizing the data
+
+```{r, activity}
+daily_Act %>%  
+  select(TotalSteps,
+         TotalDistance,
+         SedentaryMinutes, Calories) %>%
+  summary()
+
+# explore num of active minutes per category
+daily_Act %>%
+  select(VeryActiveMinutes, FairlyActiveMinutes, LightlyActiveMinutes) %>%
+  summary()
+
+# calories
+hourly_Cal %>%
+  select(Calories) %>%
+  summary()
+
+# sleep
+sleep %>%
+  select(TotalSleepRecords, TotalMinutesAsleep, TotalTimeInBed) %>%
+  summary()
+
+# weight
+weight %>%
+  select(WeightKg, BMI) %>%
+  summary()
+```
+
+#Merging the data
+
+```{r, merged Data}
+merged_Data <- merge(sleep, daily_Act, by=c('Id', 'date'))
+head(merged_Data)
+```
+
+# Visualization of the Data
+
+```{r, visuals}
+ggplot(data=daily_Act, aes(x=TotalSteps, y=Calories)) + 
+  geom_point() + geom_smooth() + labs(title="Total Steps vs. Calories")
+```
+
+#### The above scatterplot clearly shows the relationship between the Total Steps and the calories burned. 
+#### It is evident that the higher the *total steps* the higher the amount of calories burned up. 
+
+# Further visuals
+
+```{r, more visuals}
+ggplot(data=sleep, aes(x=TotalMinutesAsleep, y=TotalTimeInBed)) + 
+  geom_point(color=red)+ labs(title="Total Minutes Asleep vs. Total Time in Bed")
+```
+#### There is a linear relationship between Total Minutes Asleep and Total Time in Bed. This means Apps notifications should be employed to notify its users on when to sleep
+
+
+# Relationship between Total Minutes Asleep and Sedentry Minutes
+
+```{r, Relationship}
+ggplot(data=merged_Data, aes(x=TotalMinutesAsleep, y=SedentaryMinutes)) + 
+  geom_point(color='darkblue') + geom_smooth() +
+  labs(title="Minutes Asleep vs. Sedentary Minutes")
+```
+
+#### The relationship between the sedentary minutes and the total minutes asleep is negative. But this correlation does not necessary mean causation.
+#### A recommendation would be for the Bellabeat App to use a notification message to its users to help reduce the sedentary minutes.
+
+# Recommendation to the Stakeholders
+
+#### 1. Bellabeat App to encourage users who want to lose weight by monitoring their daily calorie consumption. Bellabeat to suggest some ideas for low-calorie lunch and dinner.
+
+#### 2. To improve users'sleep time, Bellabeat should consider using app notifications to go to bed.
+
+#### 3. Most active times are between 5 pm and 7 pm as per the analysis. Bellabeat to have systems of reminding their users on being active by having their daily run or walk.
+
+#### 4.The Bellabeat app to notify their users on reducing sedentary time in order to have improved sleep times
+
